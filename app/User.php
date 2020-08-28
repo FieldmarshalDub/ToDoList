@@ -16,7 +16,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password','moderator'
+        'name', 'email', 'password', 'moderator'
     ];
 
     /**
@@ -36,14 +36,17 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
     public function tasks()
     {
         return $this->hasMany(Task::class);
     }
+
     public function boards()
     {
         return $this->hasMany(Board::class);
     }
+
     public function isModerator()
     {
         return $this->moderator;

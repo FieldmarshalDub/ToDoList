@@ -1,6 +1,7 @@
 <?php
 
 namespace Tests\Unit;
+
 use App\Board;
 use App\User;
 use App\Task;
@@ -8,9 +9,11 @@ use Tests\TestCase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Carbon\Carbon;
+
 class LogicTest extends TestCase
 {
     use RefreshDatabase;
+
     /**
      * A basic unit test example.
      *
@@ -18,7 +21,6 @@ class LogicTest extends TestCase
      */
     public function testBoardIndex()
     {
-
         $user = $this->createUser();
         $board = $this->createBoard($user->id);
         $this->be($user);
@@ -26,12 +28,12 @@ class LogicTest extends TestCase
         $response
             ->assertStatus(200)
             ->assertJsonFragment([
-            'user_id' => $board->user_id,
-            'name' => $board->name,
-            'color' => $board->color,
-            'created_at' => $board->created_at,
-            'updated_at' => $board->updated_at,
-            'id' => $board->id
+                'user_id' => $board->user_id,
+                'name' => $board->name,
+                'color' => $board->color,
+                'created_at' => $board->created_at,
+                'updated_at' => $board->updated_at,
+                'id' => $board->id
             ]);
 
 
@@ -39,7 +41,6 @@ class LogicTest extends TestCase
 
     public function testBoardUpdate()
     {
-
         $user = $this->createUser();
         $board = $this->createBoard($user->id);
         $this->be($user);
@@ -49,7 +50,7 @@ class LogicTest extends TestCase
                 $board->id
             ]
         ));
-        $boards_info['boards']=$board;
+        $boards_info['board'] = $board;
         $this->assertDatabaseHas(
             'boards',
             [
@@ -62,82 +63,55 @@ class LogicTest extends TestCase
 
     public function testBoardDelete()
     {
-
-
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
         $this->be($user1);
         $response = $this->delete(route('boards.destroy', [$board1]));
         $response->assertStatus(204);
-        $this->assertDatabaseMissing('boards',[
-                'name' => $board1->name,
-                'user_id' => $user1->id
+        $this->assertDatabaseMissing('boards', [
+            'name' => $board1->name,
+            'user_id' => $user1->id
         ]);
     }
 
-    public function testBoardCreate()
-    {
-
-        $user1 = $this->createUser();
-
-        $this->be($user1);
-        $response = $this->get(route('boards.create'));
-        $response->assertStatus(200);
-    }
-
-
     public function testBoardStore()
     {
-
         $user1 = $this->createUser();
         $this->be($user1);
         $this->post(route('boards.store', ['name' => 'board_name', 'color' => '#0000FF']));
-        $this->assertDatabaseHas('boards',[
-                'name' => 'board_name',
-                'user_id' => $user1->id,
-                'color' => '#0000FF'
+        $this->assertDatabaseHas('boards', [
+            'name' => 'board_name',
+            'user_id' => $user1->id,
+            'color' => '#0000FF'
         ]);
     }
 
     public function testTasksIndex()
     {
-
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
-        $task1 = $this->createTask($user1->id,$board1->id);
+        $task1 = $this->createTask($user1->id, $board1->id);
         $this->be($user1);
         $response = $this->getJson(route('boards.tasks.index', [$board1->id]));
         $response
             ->assertStatus(200)
             ->assertJsonFragment([
                 'id' => $task1->id,
-                'user_id'=>$task1->user_id,
-                'board_id'=> $task1->board_id,
-                'name'=> $task1->name,
-                'status'=> $task1->status,
-                'description'=> $task1->description,
-                'scheduled_date'=> $task1->scheduled_date,
-                'real_date'=> $task1->real_date,
-                'created_at'=> $task1->created_at,
-                'updated_at'=> $task1->updated_at
+                'user_id' => $task1->user_id,
+                'board_id' => $task1->board_id,
+                'name' => $task1->name,
+                'status' => $task1->status,
+                'description' => $task1->description,
+                'scheduled_date' => $task1->scheduled_date,
+                'real_date' => $task1->real_date,
+                'created_at' => $task1->created_at,
+                'updated_at' => $task1->updated_at
             ]);
     }
 
-    public function testTaskCreate()
-    {
-
-
-        $user1 = $this->createUser();
-        $board1 = $this->createBoard($user1->id);
-
-        $this->be($user1);
-        $response = $this->get(route('boards.tasks.create', [$board1->id]));
-        $response->assertStatus(200);
-    }
 
     public function testTaskStore()
     {
-
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
 
@@ -151,7 +125,7 @@ class LogicTest extends TestCase
                     'description' => 'description',
                     'real_date' => '10.10.20',
                     'scheduled_date' => '10.10.20',
-                    'status' => 0
+                    'status' => 'in progress'
                 ]));
 
         $this->assertDatabaseHas(
@@ -163,17 +137,16 @@ class LogicTest extends TestCase
                 'description' => 'description',
                 'real_date' => '10.10.20',
                 'scheduled_date' => '10.10.20',
-                'status' => 0
+                'status' => 'in progress'
             ]
         );
     }
 
     public function testTaskDelete()
     {
-
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
-        $task1 = $this->createTask($user1->id,$board1->id);
+        $task1 = $this->createTask($user1->id, $board1->id);
 
         $this->be($user1);
         $task_id = $task1->id;
@@ -183,23 +156,20 @@ class LogicTest extends TestCase
 
     public function testTaskUpdate()
     {
-
-
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
-        $task1 = $this->createTask($user1->id,$board1->id);
-
+        $task1 = $this->createTask($user1->id, $board1->id);
         $this->be($user1);
         $response = $this->post(route('boards.tasks.update', [$board1->id, $task1->id,
             'name' => 'newTaskName',
             'description' => 'newDescription',
-            'status' => 1,
+            'status' => 'performed',
             'scheduled_date' => '2020-02-10'
         ]));
         $this->assertDatabaseHas('tasks', [
             'name' => 'newTaskName',
             'description' => 'newDescription',
-            'status' => 1,
+            'status' => 'performed',
             'real_date' => date('Y-m-d'),
             'scheduled_date' => '2020-02-10'
         ]);
@@ -207,30 +177,26 @@ class LogicTest extends TestCase
 
     public function testMoveTask()
     {
-
-
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
         $board2 = $this->createBoard($user1->id);
-        $task2 = $this->createTask($user1->id,$board2->id);
+        $task2 = $this->createTask($user1->id, $board2->id);
 
         $this->be($user1);
-        $response = $this->post(route('boards.tasks.move', ['board_id'=>$board2->id, 'task_id'=>$task2->id, 'to_board_id' => $board1->id]));
+        $response = $this->post(route('boards.tasks.move', ['board_id' => $board2->id, 'task_id' => $task2->id, 'destination_id' => $board1->id]));
         $response->assertOk();
         $this->assertDatabaseMissing('tasks', ['name' => $task2->name, 'board_id' => $board2->id]);
     }
 
     public function testCopyTask()
     {
-
-
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
         $board2 = $this->createBoard($user1->id);
-        $task2 = $this->createTask($user1->id,$board2->id);
+        $task2 = $this->createTask($user1->id, $board2->id);
 
         $this->be($user1);
-        $response = $this->post(route('boards.tasks.copy', ['board_id'=>$board2->id, 'task_id'=>$task2->id, 'to_board_id' => $board1->id]));
+        $response = $this->post(route('boards.tasks.copy', ['board_id' => $board2->id, 'task_id' => $task2->id, 'to_board_id' => $board1->id]));
         $response->assertOk();
         $this->assertDatabaseHas('tasks', [
             'user_id' => $user1->id,
@@ -247,13 +213,11 @@ class LogicTest extends TestCase
 
     public function testDownloadBoards()
     {
-
         $user1 = $this->createUser();
         $board1 = $this->createboard($user1->id);
         $zip_archive = new \ZipArchive();
         $zip_file_name = 'boards.zip';
         $zip_archive->open($zip_file_name, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
-
         $board_serialized['name'] = $board1->name;
         $board_serialized['user'] = $board1->user->name;
         $board_serialized['tasks'] = $board1->tasks;
@@ -267,19 +231,12 @@ class LogicTest extends TestCase
         $response = $this->get(route('boards.download'));
         $this->assertTrue($hash === sha1($zip_file_name));
     }
+
     private function createUser()
     {
         $user = factory('App\User')->create();
         $user->moderator = 0;
         return $user;
-    }
-
-    private function createModerator()
-    {
-
-        $moderator = factory(User::class)->create();
-        $moderator->moderator = 1;
-        return $moderator;
     }
 
     private function createBoard(int $user_id)
@@ -290,14 +247,12 @@ class LogicTest extends TestCase
         return $board;
     }
 
-    private function createTask($user_id,$board_id)
+    private function createTask($user_id, $board_id)
     {
         $task = factory(Task::class)->create();
         $task->board_id = $board_id;
         $task->user_id = $user_id;
         $task->save();
-
-
         return $task;
     }
 

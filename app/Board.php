@@ -1,15 +1,18 @@
 <?php
 
 namespace App;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Board extends Model
 {
-    protected $fillable = ['name','color','user_id'];
+    protected $fillable = ['name', 'color', 'user_id'];
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
+
     public function tasks()
     {
         return $this->hasMany('App\Task');
