@@ -15,7 +15,7 @@ class TaskController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware('auth:api');
     }
 
     public function index(Request $request)
@@ -39,15 +39,15 @@ class TaskController extends Controller
             'description' => 'required | max:255',
             'scheduled_date' => 'required'
         ]);
-        $board->user->tasks()->create([
-            'name' => $request->name,
-            'board_id' => $request->board_id,
-            'description' => $request->description,
-            'scheduled_date' => $request->scheduled_date,
-            'real_date' => $request->scheduled_date,
-            'status' => $request->status,
-        ]);
-        $task = Task::where('name', $request->name);
+        $task = new Task;
+        $task->name = $request->name;
+        $task->user_id = $request->user()->id;
+        $task->board_id = $request->board_id;
+        $task->description = $request->description;
+        $task->scheduled_date = $request->scheduled_date;
+        $task->real_date = $request->scheduled_date;
+        $task->status = $request->status;
+        $task->save();
         return response()->json($task, 200);
     }
 
@@ -55,14 +55,9 @@ class TaskController extends Controller
     {
         $task = Task::find($request->task_id);
         $this->authorize('action', $task);
-        $request->user()->tasks()->create([
-            'name' => $task->name,
-            'board_id' => $request->to_board_id,
-            'description' => $task->description,
-            'scheduled_date' => $task->scheduled_date,
-            'real_date' => $task->scheduled_date,
-            'status' => $task->status,
-        ]);
+        $new_task = $task;
+        $new_task->board_id = $request->destination_id;
+        $new_task->save();
         return response(null, 200);
     }
 
@@ -77,6 +72,11 @@ class TaskController extends Controller
 
     public function update(Request $request)
     {
+        $this->validate($request, [
+            'name' => 'required|max:255',
+            'description' => 'required | max:255',
+            'scheduled_date' => 'required'
+        ]);
         $task = Task::find($request->task_id);
         $this->authorize('action', $task);
         $task->update([

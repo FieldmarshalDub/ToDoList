@@ -5,21 +5,25 @@ namespace Tests\Unit;
 use App\Board;
 use App\User;
 use App\Task;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+
+use Laravel\Passport\Passport;
 use Tests\TestCase;
 
 class UserPermissionTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     public function testUserCantSeeOtherUserBoard()
     {
         $user1 = $this->createUser();
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
-        $response = $this->actingAs($user1)->get(route('boards.tasks.index', [$board2->id]));
+        Passport::actingAs($user1);
+        $response = $this->get(route('boards.tasks.index', [$board2->id]));
         $response->assertStatus(403);
     }
 
@@ -28,7 +32,8 @@ class UserPermissionTest extends TestCase
         $user1 = $this->createUser();
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
-        $response = $this->actingAs($user1)->post(route('boards.update', [$board2->id]));
+        Passport::actingAs($user1);
+        $response = $this->post(route('boards.update', [$board2->id,'name'=>$board2->name,'color'=>$board2->color]));
         $response->assertStatus(403);
     }
 
@@ -37,7 +42,8 @@ class UserPermissionTest extends TestCase
         $user1 = $this->createUser();
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
-        $response = $this->actingAs($user1)->delete(route('boards.destroy', [$board2]));
+        Passport::actingAs($user1);
+        $response = $this->delete(route('boards.destroy', [$board2]));
         $response->assertStatus(403);
     }
 
@@ -47,7 +53,8 @@ class UserPermissionTest extends TestCase
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
         $task2 = $this->createTask($user2->id, $board2->id);
-        $response = $this->actingAs($user1)->post(route('boards.tasks.store', [$board2->id, $task2->id]));
+        Passport::actingAs($user1);
+        $response = $this->post(route('boards.tasks.store', [$board2->id, $task2->id]));
         $response->assertStatus(403);
     }
 
@@ -57,7 +64,11 @@ class UserPermissionTest extends TestCase
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
         $task2 = $this->createTask($user2->id, $board2->id);
-        $response = $this->actingAs($user1)->post(route('boards.tasks.update', [$board2->id, $task2->id]));
+        Passport::actingAs($user1);
+        $response = $this->post(route('boards.tasks.update', [$board2->id,$task2->id,
+            'name' => $task2->name,
+            'description' => $task2->description,
+            'scheduled_date' =>$task2->scheduled_date ]));
         $response->assertStatus(403);
     }
 
@@ -67,7 +78,8 @@ class UserPermissionTest extends TestCase
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
         $task2 = $this->createTask($user2->id, $board2->id);
-        $response = $this->actingAs($user1)->post(route('boards.tasks.move', [$board2->id, $task2->id]));
+        Passport::actingAs($user1);
+        $response = $this->post(route('boards.tasks.move', [$board2->id, $task2->id]));
         $response->assertStatus(403);
     }
 
@@ -77,7 +89,8 @@ class UserPermissionTest extends TestCase
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
         $task2 = $this->createTask($user2->id, $board2->id);
-        $response = $this->actingAs($user1)->post(route('boards.tasks.copy', [$board2->id, $task2]));
+        Passport::actingAs($user1);
+        $response = $this->post(route('boards.tasks.copy', [$board2->id, $task2]));
         $response->assertStatus(403);
     }
 
@@ -87,7 +100,8 @@ class UserPermissionTest extends TestCase
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
         $task2 = $this->createTask($user2->id, $board2->id);
-        $response = $this->actingAs($user1)->delete(route('boards.tasks.destroy', [$board2->id, $task2]));
+        Passport::actingAs($user1);
+        $response = $this->delete(route('boards.tasks.destroy', [$board2->id, $task2]));
         $response->assertStatus(403);
     }
 
@@ -96,7 +110,8 @@ class UserPermissionTest extends TestCase
         $user1 = $this->createModerator();
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
-        $response = $this->actingAs($user1)->get(route('boards.tasks.index', [$board2->id]));
+        Passport::actingAs($user1);
+        $response = $this->get(route('boards.tasks.index', [$board2->id]));
 
         $response->assertOk();
     }
@@ -106,7 +121,12 @@ class UserPermissionTest extends TestCase
         $user1 = $this->createModerator();
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
-        $response = $this->actingAs($user1)->post(route('boards.update', [$board2->id]));
+        Passport::actingAs($user1);
+        $response = $this->post(route('boards.update', [
+            $board2->id,
+            'name' => 'newName',
+            'color' => $board2->color
+        ]));
         $response->assertOk();
     }
 
@@ -115,7 +135,8 @@ class UserPermissionTest extends TestCase
         $user1 = $this->createModerator();
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
-        $response = $this->actingAs($user1)->delete(route('boards.destroy', [$board2]));
+        Passport::actingAs($user1);
+        $response = $this->delete(route('boards.destroy', [$board2]));
 
         $response->assertStatus(204);
     }
@@ -128,7 +149,8 @@ class UserPermissionTest extends TestCase
         $board1 = $this->createBoard($user1->id);
         $board2 = $this->createBoard($user2->id);
         $task2 = $this->createTask($user2->id, $board2->id);
-        $response = $this->actingAs($user1)->post(route('boards.tasks.move', ['board_id' => $board2->id, 'task_id' => $task2->id, 'destination_id' => $board1->id]));
+        Passport::actingAs($user1);
+        $response = $this->post(route('boards.tasks.move', ['board_id' => $board2->id, 'task_id' => $task2->id, 'destination_id' => $board1->id]));
         $response->assertOk();
     }
 
@@ -139,7 +161,8 @@ class UserPermissionTest extends TestCase
         $board1 = $this->createBoard($user1->id);
         $board2 = $this->createBoard($user2->id);
         $task2 = $this->createTask($user2->id, $board2->id);
-        $response = $this->actingAs($user1)->post(route('boards.tasks.copy', ['board_id' => $board2->id, 'task_id' => $task2->id, 'to_board_id' => $board1->id]));
+        Passport::actingAs($user1);
+        $response = $this->post(route('boards.tasks.copy', ['board_id' => $board2->id, 'task_id' => $task2->id, 'destination_id' => $board1->id]));
         $response->assertOk();
     }
 
@@ -149,7 +172,8 @@ class UserPermissionTest extends TestCase
         $user2 = $this->createUser();
         $board2 = $this->createBoard($user2->id);
         $task2 = $this->createTask($user2->id, $board2->id);
-        $response = $this->actingAs($user1)->delete(route('boards.tasks.destroy', [$board2->id, $task2]));
+        Passport::actingAs($user1);
+        $response = $this->delete(route('boards.tasks.destroy', [$board2->id, $task2]));
         $response->assertStatus(204);
     }
 

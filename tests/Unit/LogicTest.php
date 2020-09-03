@@ -5,25 +5,43 @@ namespace Tests\Unit;
 use App\Board;
 use App\User;
 use App\Task;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Laravel\Passport\Passport;
 use Tests\TestCase;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Carbon\Carbon;
 
 class LogicTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     /**
      * A basic unit test example.
      *
      * @return void
      */
+    public function testRegister()
+    {
+        $email = 'mail@mail.com';
+        $password = 'Password';
+        $name = 'Name';
+        $response = $this->post(route('register'), ['email' => $email, 'name' => $name, 'password' => $password]);
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('users', ['name' => $name, 'email' => $email]);
+    }
+
+    public function testLogin()
+    {
+        $user = $this->createUser();
+        $user->password = 'password';
+        $response = $this->post(route('login'), ['email' => $user->email, 'password' => $user->password]);
+        $response->assertStatus(200);
+    }
+
     public function testBoardIndex()
     {
         $user = $this->createUser();
         $board = $this->createBoard($user->id);
-        $this->be($user);
+        Passport::actingAs($user);
         $response = $this->getJson(route('boards.index'));
         $response
             ->assertStatus(200)
@@ -43,14 +61,14 @@ class LogicTest extends TestCase
     {
         $user = $this->createUser();
         $board = $this->createBoard($user->id);
-        $this->be($user);
+        Passport::actingAs($user);
         $response = $this->post(route('boards.update',
             [
                 'name' => 'newName',
+                'color' => '#0000FF',
                 $board->id
             ]
         ));
-        $boards_info['board'] = $board;
         $this->assertDatabaseHas(
             'boards',
             [
@@ -58,14 +76,23 @@ class LogicTest extends TestCase
             ]
         );
         $response->assertStatus(200);
-        $response->assertJson($boards_info);
+        $response
+            ->assertStatus(200)
+            ->assertJsonFragment([
+                'user_id' => $board->user_id,
+                'name' => 'newName',
+                'color' => $board->color,
+                'created_at' => $board->created_at,
+                'updated_at' => $board->updated_at,
+                'id' => $board->id
+            ]);
     }
 
     public function testBoardDelete()
     {
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
-        $this->be($user1);
+        Passport::actingAs($user1);
         $response = $this->delete(route('boards.destroy', [$board1]));
         $response->assertStatus(204);
         $this->assertDatabaseMissing('boards', [
@@ -77,7 +104,7 @@ class LogicTest extends TestCase
     public function testBoardStore()
     {
         $user1 = $this->createUser();
-        $this->be($user1);
+        Passport::actingAs($user1);
         $this->post(route('boards.store', ['name' => 'board_name', 'color' => '#0000FF']));
         $this->assertDatabaseHas('boards', [
             'name' => 'board_name',
@@ -91,7 +118,7 @@ class LogicTest extends TestCase
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
         $task1 = $this->createTask($user1->id, $board1->id);
-        $this->be($user1);
+        Passport::actingAs($user1);
         $response = $this->getJson(route('boards.tasks.index', [$board1->id]));
         $response
             ->assertStatus(200)
@@ -114,8 +141,7 @@ class LogicTest extends TestCase
     {
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
-
-        $this->be($user1);
+        Passport::actingAs($user1);
         $response = $this->post(
             route('boards.tasks.store',
                 [
@@ -127,7 +153,7 @@ class LogicTest extends TestCase
                     'scheduled_date' => '10.10.20',
                     'status' => 'in progress'
                 ]));
-
+        $response->assertStatus(200);
         $this->assertDatabaseHas(
             'tasks',
             [
@@ -147,8 +173,7 @@ class LogicTest extends TestCase
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
         $task1 = $this->createTask($user1->id, $board1->id);
-
-        $this->be($user1);
+        Passport::actingAs($user1);
         $task_id = $task1->id;
         $response = $this->delete(route('boards.tasks.destroy', [$board1->id, $task1->id]));
         $this->assertDatabaseMissing('tasks', ['id' => $task_id]);
@@ -159,7 +184,7 @@ class LogicTest extends TestCase
         $user1 = $this->createUser();
         $board1 = $this->createBoard($user1->id);
         $task1 = $this->createTask($user1->id, $board1->id);
-        $this->be($user1);
+        Passport::actingAs($user1);
         $response = $this->post(route('boards.tasks.update', [$board1->id, $task1->id,
             'name' => 'newTaskName',
             'description' => 'newDescription',
@@ -181,8 +206,7 @@ class LogicTest extends TestCase
         $board1 = $this->createBoard($user1->id);
         $board2 = $this->createBoard($user1->id);
         $task2 = $this->createTask($user1->id, $board2->id);
-
-        $this->be($user1);
+        Passport::actingAs($user1);
         $response = $this->post(route('boards.tasks.move', ['board_id' => $board2->id, 'task_id' => $task2->id, 'destination_id' => $board1->id]));
         $response->assertOk();
         $this->assertDatabaseMissing('tasks', ['name' => $task2->name, 'board_id' => $board2->id]);
@@ -194,15 +218,9 @@ class LogicTest extends TestCase
         $board1 = $this->createBoard($user1->id);
         $board2 = $this->createBoard($user1->id);
         $task2 = $this->createTask($user1->id, $board2->id);
-
-        $this->be($user1);
-        $response = $this->post(route('boards.tasks.copy', ['board_id' => $board2->id, 'task_id' => $task2->id, 'to_board_id' => $board1->id]));
+        Passport::actingAs($user1);
+        $response = $this->post(route('boards.tasks.copy', ['board_id' => $board2->id, 'task_id' => $task2->id, 'destination_id' => $board1->id]));
         $response->assertOk();
-        $this->assertDatabaseHas('tasks', [
-            'user_id' => $user1->id,
-            'board_id' => $board2->id,
-            'name' => $task2->name,
-        ]);
         $this->assertDatabaseHas('tasks', [
             'user_id' => $user1->id,
             'board_id' => $board1->id,
@@ -227,7 +245,7 @@ class LogicTest extends TestCase
         $zip_archive->close();
         $hash = sha1($zip_file_name);
         Storage::disk('local')->delete($zip_file_name);
-        $this->be($user1);
+        Passport::actingAs($user1);
         $response = $this->get(route('boards.download'));
         $this->assertTrue($hash === sha1($zip_file_name));
     }

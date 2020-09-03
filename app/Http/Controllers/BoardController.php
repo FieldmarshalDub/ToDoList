@@ -6,13 +6,16 @@ use App\Board;
 
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
-define("JSON",".json");
+
+define("JSON", ".json");
+
 class BoardController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware('auth:api');
     }
+
     public function index(Request $request)
     {
         $boards = $request->user()->isModerator() ? Board::all() : $request->user()->boards;
@@ -23,27 +26,33 @@ class BoardController extends Controller
     {
         $this->validate($request, [
             'name' => 'required|max:255',
+            'color' => 'required|max:255',
         ]);
-        Board::create([
-            'user_id' => $request->user()->id,
-            'name' => $request->name,
-            'color' => $request->color,
-        ]);
-        $user_boards = Board::where('user_id', $request->user()->id);
-
-        return response()->json($user_boards, 200);
+        $board = new Board;
+        $board->user_id = $request->user()->id;
+        $board->name = $request->name;
+        $board->color = $request->color;
+        $board->save();
+        return response()->json($board, 201);
     }
+
     public function update(Request $request)
     {
+        $this->validate($request, [
+            'name' => 'required|max:255',
+            'color' => 'required|max:255',
+        ]);
         $board = Board::find($request->board_id);
         $this->authorize('action', $board);
-        $board = $board->update($request->all());
-        $response_data['board'] = $board;
-        return response()->json($response_data, 200);
+        $board->name = $request->name;
+        $board->color = $request->color;
+        $board->save();
+        return response()->json($board, 200);
     }
 
-    public function destroy(Board $board)
+    public function destroy(Request $request)
     {
+        $board = Board::find($request->board_id);
         $this->authorize('action', $board);
         $board->tasks()->delete();
         $board->delete();
