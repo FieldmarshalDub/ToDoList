@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use App\Board;
-use App\User;
 use App\Task;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Laravel\Passport\Passport;

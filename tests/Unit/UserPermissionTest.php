@@ -6,10 +6,6 @@ use App\Board;
 use App\User;
 use App\Task;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
 use Laravel\Passport\Passport;
 use Tests\TestCase;
 
